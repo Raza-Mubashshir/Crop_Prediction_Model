@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CropSight | Agricultural Price Predictor</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAA==">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Add AOS (Animate On Scroll) library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <!-- Load Chart.js from multiple CDNs for reliability -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script>
+        // Fallback if primary CDN fails
+        if (typeof Chart === 'undefined') {
+            console.warn('Primary Chart.js CDN failed, trying fallback...');
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js';
+            script.onload = function() {
+                console.log('Chart.js loaded from fallback CDN');
+            };
+            script.onerror = function() {
+                console.error('Both Chart.js CDNs failed');
+                alert('Failed to load required libraries. Please check your internet connection and refresh the page.');
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-leaf"></i>
+            <h1>CropSight</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#" class="active">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><button id="darkModeToggle" class="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button></li>
+                <li><button id="loginBtn" class="login-btn">Login</button></li>
+                <li><button id="signoutBtn" class="login-btn" style="display: none;">Sign Out</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="login">Login</button>
+                <button class="tab-btn" data-tab="signup">Sign Up</button>
+            </div>
+            
+            <div id="login-form" class="tab-content active">
+                <h2>Login to CropSight</h2>
+                <form id="login">
+                    <div class="form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" required>
+                    </div>
+                    <div class="form-group password-field">
+                        <label for="login-password">Password</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="login-password" required>
+                            <button type="button" class="password-toggle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn">Login</button>
+                </form>
+            </div>
+            
+            <div id="signup-form" class="tab-content">
+                <h2>Create an Account</h2>
+                <form id="signup">
+                    <div class="form-group">
+                        <label for="signup-username">Username</label>
+                        <input type="text" id="signup-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-contact">Email ID / Mobile Number</label>
+                        <input type="text" id="signup-contact" required>
+                        <small>Enter your email address or 10-digit mobile number</small>
+                    </div>
+                    <div class="form-group password-field">
+                        <label for="signup-password">Password</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="signup-password" required>
+                            <button type="button" class="password-toggle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn">Sign Up</button>
+                </form>
+
+                <!-- OTP Verification Form -->
+                <div id="otp-verification" class="tab-content" style="display: none;">
+                    <h2>Verify Your Contact</h2>
+                    <p>We've sent a verification code to your contact. Please enter it below.</p>
+                    <form id="verify-otp">
+                        <div class="form-group">
+                            <label for="otp-code">Verification Code</label>
+                            <input type="text" id="otp-code" maxlength="6" required>
+                            <small>Enter the 6-digit code sent to your contact</small>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="submit-btn">Verify</button>
+                            <button type="button" class="resend-btn" onclick="resendOTP()">Resend Code</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="hero">
+        <div class="hero-content" data-aos="fade-right">
+            <h1>Predict Agricultural Commodity Prices with Confidence</h1>
+            <p>Make informed decisions with our advanced price prediction system. Get accurate forecasts for various agricultural commodities using cutting-edge machine learning algorithms.</p>
+            <button id="get-started" class="cta-btn">Get Started</button>
+        </div>
+        <div class="hero-image" data-aos="fade-left">
+            <div class="slideshow-container">
+                <img src="/static/images/pexels-quang-nguyen-vinh-222549-2132250.jpg" alt="Agricultural field with crops" class="slide active">
+                <img src="/static/images/pexels-markusspiske-1268101.jpg" alt="Agricultural market analysis" class="slide">
+                <img src="/static/images/pexels-sergei-a-1322276-2589457.jpg" alt="Modern farming" class="slide">
+                <img src="/static/images/pexels-ryan-baker-35851-129574.jpg" alt="Agricultural technology" class="slide">
+            </div>
+        </div>
+    </section>
+
+    <section class="main-content">
+        <div class="container">
+            <div class="predictor-card" data-aos="zoom-in">
+                <h2>Commodity Price Predictor</h2>
+                <div class="form-group">
+                    <label for="commodity">Select Commodity:</label>
+                    <select id="commodity" name="commodity" required>
+                        <option value="">Choose a commodity...</option>
+                        <!-- Staple Grains -->
+                        <option value="Rice">Rice</option>
+                        <option value="Wheat">Wheat</option>
+                        
+                        <!-- Pulses -->
+                        <option value="Gram Dal">Gram Dal</option>
+                        <option value="Tur/Arhar Dal">Tur/Arhar Dal</option>
+                        <option value="Urad Dal">Urad Dal</option>
+                        <option value="Moong Dal">Moong Dal</option>
+                        <option value="Masoor Dal">Masoor Dal</option>
+                        
+                        <!-- Oils -->
+                        <option value="Groundnut Oil">Groundnut Oil</option>
+                        <option value="Mustard Oil">Mustard Oil</option>
+                        <option value="Vanaspati">Vanaspati</option>
+                        <option value="Soya Oil">Soya Oil</option>
+                        <option value="Sunflower Oil">Sunflower Oil</option>
+                        <option value="Palm Oil">Palm Oil</option>
+                        
+                        <!-- Vegetables -->
+                        <option value="Potato">Potato</option>
+                        <option value="Onion">Onion</option>
+                        <option value="Tomato">Tomato</option>
+                        
+                        <!-- Others -->
+                        <option value="Sugar">Sugar</option>
+                        <option value="Gur">Gur</option>
+                        <option value="Tea Loose">Tea Loose</option>
+                        <option value="Milk">Milk</option>
+                        <option value="Salt Pack (Iodised)">Salt Pack (Iodised)</option>
+                    </select>
+                </div>
+                <div class="btn-group">
+                    <button id="historicalBtn" onclick="fetchPrices()">
+                        <i class="fas fa-history"></i> Historical Prices
+                    </button>
+                    <button id="predictBtn" onclick="getPredictions()">
+                        <i class="fas fa-chart-line"></i> Predict Prices
+                    </button>
+                </div>
+
+                <div class="results-section">
+                    <div class="chart-container">
+                        <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>Loading data...</p>
+                        </div>
+                        <canvas id="priceChart"></canvas>
+                    </div>
+
+                    <!-- Add Price Alert System -->
+                    <div class="alerts-section" data-aos="fade-up">
+                        <h2>Price Alerts</h2>
+                        <div class="alerts-container">
+                            <form id="alert-form" class="alert-form">
+                                <div class="form-group">
+                                    <label for="alert-price">Target Price (₹)</label>
+                                    <input type="number" id="alert-price" required min="0" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label for="alert-condition">Condition</label>
+                                    <select id="alert-condition" required>
+                                        <option value="above">Price goes above</option>
+                                        <option value="below">Price goes below</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="alert-notification">Notification Method</label>
+                                    <select id="alert-notification" required>
+                                        <option value="email">Email</option>
+                                        <option value="sms">SMS</option>
+                                        <option value="both">Both</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="submit-btn">Set Alert</button>
+                            </form>
+                            <div class="active-alerts">
+                                <h3>Active Alerts</h3>
+                                <div class="alerts-list" id="alertsList">
+                                    <!-- Active alerts will be dynamically added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Advanced Analytics Dashboard -->
+                    <div class="analytics-dashboard" data-aos="fade-up">
+                        <h2>Advanced Analytics</h2>
+                        <div class="analytics-grid">
+                            <!-- Price Trends Card -->
+                            <div class="analytics-card">
+                                <h3>Price Trends</h3>
+                                <div class="trend-indicators">
+                                    <div class="trend-item">
+                                        <span class="trend-label">30-Day Change</span>
+                                        <span class="trend-value" id="thirtyDayChange">--</span>
+                                    </div>
+                                    <div class="trend-item">
+                                        <span class="trend-label">90-Day Change</span>
+                                        <span class="trend-value" id="ninetyDayChange">--</span>
+                                    </div>
+                                    <div class="trend-item">
+                                        <span class="trend-label">Year-to-Date</span>
+                                        <span class="trend-value" id="ytdChange">--</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Best Time to Sell Card -->
+                            <div class="analytics-card">
+                                <h3>Best Time to Sell</h3>
+                                <div class="sell-recommendations">
+                                    <div class="recommendation-item">
+                                        <span class="recommendation-label">Optimal Selling Period</span>
+                                        <span class="recommendation-value" id="optimalSellPeriod">--</span>
+                                    </div>
+                                    <div class="recommendation-item">
+                                        <span class="recommendation-label">Expected Price Range</span>
+                                        <span class="recommendation-value" id="expectedPriceRange">--</span>
+                                    </div>
+                                    <div class="price-confidence">
+                                        <span class="confidence-label">Prediction Confidence</span>
+                                        <div class="confidence-meter">
+                                            <div class="confidence-fill" id="confidenceMeter"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Seasonal Analysis Card -->
+                            <div class="analytics-card full-width">
+                                <h3>Seasonal Price Patterns</h3>
+                                <div class="seasonal-chart-container">
+                                    <canvas id="seasonalChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Market Insights Card -->
+                            <div class="analytics-card">
+                                <h3>Market Insights</h3>
+                                <div class="market-insights" id="marketInsights">
+                                    <div class="insight-item">
+                                        <i class="fas fa-chart-line"></i>
+                                        <div class="insight-content">
+                                            <h4>Price Volatility</h4>
+                                            <p id="volatilityMetric">--</p>
+                                        </div>
+                                    </div>
+                                    <div class="insight-item">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <div class="insight-content">
+                                            <h4>Seasonal Strength</h4>
+                                            <p id="seasonalStrength">--</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tables-container">
+                        <div class="table-wrapper" id="historical-table">
+                            <h2>Historical Prices</h2>
+                            <div class="table-scroll" id="historical-table-scroll">
+                                <table id="priceTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Price (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper" id="prediction-table">
+                            <h2>Predicted Prices</h2>
+                            <div class="table-scroll" id="prediction-table-scroll">
+                                <table id="predictionTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Price (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="about-section">
+        <div class="container">
+            <h2>About CropSight</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <p>CropSight helps farmers, traders, and agricultural businesses make informed decisions by providing accurate price forecasts for various commodities.</p>
+                    <p>Our advanced machine learning models analyze historical price data to predict future trends with remarkable accuracy.</p>
+                    <ul class="features">
+                        <li><i class="fas fa-check-circle"></i> Price predictions up to 5 years in advance</li>
+                        <li><i class="fas fa-check-circle"></i> Historical data analysis</li>
+                        <li><i class="fas fa-check-circle"></i> Personalized user accounts to save predictions</li>
+                        <li><i class="fas fa-check-circle"></i> Reliable forecasting using SARIMAX models</li>
+                    </ul>
+                </div>
+                <div class="metrics-card">
+                    <h3>Model Performance</h3>
+                    <div class="metrics">
+                        <div class="metric">
+                            <span class="metric-value">93.5%</span>
+                            <span class="metric-label">Average Accuracy</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">0.48</span>
+                            <span class="metric-label">Average RMSE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-leaf"></i>
+                    <h2>CropSight</h2>
+                    <p>Advanced Agricultural Price Prediction</p>
+                </div>
+                <div class="footer-links">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="#">Home</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-contact">
+                    <h3>Contact Us</h3>
+                    <ul>
+                        <li><i class="fas fa-envelope"></i> info@cropsight.com</li>
+                        <li><i class="fas fa-phone"></i> +91 987654XXXX</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Amity University, Noida</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 CropSight. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize AOS
+            AOS.init({
+                duration: 1000,
+                once: true,
+                offset: 50
+            });
+
+            // Check for saved theme preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                const icon = document.querySelector('#darkModeToggle i');
+                if (icon) {
+                    icon.className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
